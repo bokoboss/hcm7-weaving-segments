@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCM7 Weaving Segment Analysis Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .thai-font {
+            font-family: 'Sarabun', sans-serif;
+        }
+        .eng-font {
+            font-family: 'Inter', sans-serif;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+            padding: 1.5rem;
+            transition: all 0.3s ease-in-out;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .card-header h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+        .card-header svg {
+            width: 1.5rem;
+            height: 1.5rem;
+            color: #4f46e5;
+        }
+        .los-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            border-radius: 9999px;
+            width: 80px;
+            height: 80px;
+            font-size: 2.25rem;
+            color: white;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        details > summary {
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .hv-details summary {
+            font-size: 0.875rem;
+            color: #4f46e5;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+        .movement-group {
+            padding: 1rem;
+            background-color: #f9fafb;
+            border: 1px solid #f3f4f6;
+            border-radius: 0.5rem;
+        }
+        .printable-area {
+            display: none;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .printable-area, .printable-area * {
+                visibility: visible;
+            }
+            .printable-area {
+                display: block;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 thai-font">เครื่องมือวิเคราะห์ส่วนทอ (Weaving Segment)</h1>
+            <p class="text-lg text-gray-500 mt-2 eng-font">HCM7 Chapter 13 Analysis Tool (v2.7 - HCM Conformity Patch)</p>
+        </header>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <!-- Input Section -->
+            <div class="xl:col-span-2">
+                <form id="analysis-form">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="space-y-6">
+                             <div class="card">
+                                <div class="card-header">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C6.095 4.01 5.25 4.973 5.25 6.108V18.75c0 1.243.87 2.25 1.969 2.25H18A2.25 2.25 0 0020.25 18.75V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08" /></svg>
+                                    <h2 class="thai-font">1. ข้อมูลโครงการและ Facility</h2>
+                                </div>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label for="facility_type" class="block text-sm font-medium text-gray-700 thai-font">ประเภท Facility (กำหนดเกณฑ์ LOS)</label>
+                                        <select id="facility_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                            <option value="freeway">Freeway Weaving</option>
+                                            <option value="multilane_cd">Multilane / C-D Road</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="analysis_period" class="block text-sm font-medium text-gray-700 thai-font">ช่วงเวลาวิเคราะห์</label>
+                                        <select id="analysis_period" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                            <option value="15min">15-min Peak Period (PHF=1.0)</option>
+                                            <option value="hourly">Hourly (ระบุ PHF)</option>
+                                        </select>
+                                    </div>
+                                    <div id="phf-input-container" class="hidden">
+                                        <label for="PHF" class="block text-sm font-medium text-gray-700">PHF</label>
+                                        <input type="number" id="PHF" value="0.92" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" step="0.01" min="0.25" max="1.0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                 <div class="card-header">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+                                    <h2 class="thai-font">2. ข้อมูลกายภาพ (Geometry)</h2>
+                                 </div>
+                                 <div class="grid grid-cols-2 gap-4">
+                                     <div><label for="LS_m" class="block text-sm font-medium text-gray-700">LS (m)</label><input type="number" id="LS_m" value="350" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" step="1" required></div>
+                                     <div><label for="N" class="block text-sm font-medium text-gray-700">N (lanes)</label><input type="number" id="N" value="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" min="2" required></div>
+                                 </div>
+                                 <div class="mt-4 pt-4 border-t">
+                                     <label for="ffs_mode" class="block text-sm font-medium text-gray-700 thai-font">การกำหนด Free-Flow Speed (FFS)</label>
+                                     <select id="ffs_mode" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                         <option value="manual">Manual Input (กรอกค่าโดยตรง)</option>
+                                         <option value="estimate">Estimate FFS (ประเมินค่าจากข้อมูลกายภาพ)</option>
+                                     </select>
+                                 </div>
+                                 <div id="ffs-manual-input" class="mt-4">
+                                     <label for="FFS_kmh" class="block text-sm font-medium text-gray-700">Free-Flow Speed (km/h)</label>
+                                     <input type="number" id="FFS_kmh" value="105" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                 </div>
+                                 <div id="ffs-estimate-inputs" class="hidden mt-4 space-y-4">
+                                     <div><label for="BFFS_kmh" class="block text-sm font-medium text-gray-700">Base FFS (km/h)</label><input type="number" id="BFFS_kmh" value="120" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                                     <div><label for="lane_width_m" class="block text-sm font-medium text-gray-700">Lane Width (m)</label><input type="number" id="lane_width_m" value="3.6" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" step="0.1"></div>
+                                     <div id="ffs-freeway-options">
+                                         <div class="grid grid-cols-2 gap-4">
+                                         <div><label for="rlc_m" class="block text-sm font-medium text-gray-700">Right Lateral Clearance (m)</label><input type="number" id="rlc_m" value="2.0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" step="0.1"></div>
+                                         <div><label for="trd_per_km" class="block text-sm font-medium text-gray-700">Total Ramp Density (ramps/km)</label><input type="number" id="trd_per_km" value="1.0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" step="0.1"></div>
+                                         </div>
+                                     </div>
+                                     <div id="ffs-multilane-options" class="hidden space-y-4">
+                                          <div><label for="tlc_m" class="block text-sm font-medium text-gray-700">Total Lateral Clearance (m)</label><input type="number" id="tlc_m" value="4.0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" step="0.1" placeholder="Right + Left Clearance"></div>
+                                          <div>
+                                             <label for="median_type" class="block text-sm font-medium text-gray-700">Median Type</label>
+                                             <select id="median_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                                 <option value="divided">Divided</option>
+                                                 <option value="undivided">Undivided</option>
+                                                 <option value="twltl">TWLTL</option>
+                                             </select>
+                                          </div>
+                                          <div><label for="access_points_per_km" class="block text-sm font-medium text-gray-700">Access Point Density (#/km)</label><input type="number" id="access_points_per_km" value="10" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                                     </div>
+                                 </div>
+                                 <div class="mt-4">
+                                      <label for="ID_per_km" class="block text-sm font-medium text-gray-700">Interchange Density (ID, #/km)</label>
+                                      <input type="number" id="ID_per_km" value="0.6" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" step="0.1">
+                                 </div>
+                            </div>
+                             <div class="card">
+                                <div class="card-header">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5L7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" /></svg>
+                                    <h2 class="thai-font">3. รูปแบบ (Configuration)</h2>
+                                </div>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label for="weave_type" class="block text-sm font-medium text-gray-700 thai-font">ประเภทการทอ</label>
+                                        <select id="weave_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                            <option value="one_sided">One-Sided Weave</option>
+                                            <option value="two_sided">Two-Sided Weave</option>
+                                        </select>
+                                    </div>
+                                    <div class="my-4">
+                                        <img id="weave-diagram-img" src="" alt="Weaving diagram" class="w-full h-auto rounded-lg">
+                                    </div>
+                                    <div id="one-sided-options">
+                                        <div>
+                                            <label for="NWL" class="block text-sm font-medium text-gray-700">NWL (Number of Weaving Lanes)</label>
+                                            <select id="NWL" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                                <option value="2">2 (Ramp Weave / Major Weave without lane balance)</option>
+                                                <option value="3" selected>3 (Major Weave with lane balance)</option>
+                                            </select>
+                                        </div>
+                                        <div id="one-sided-lc-inputs" class="grid grid-cols-2 gap-4 mt-4">
+                                            <div><label for="LCRF" class="block text-sm font-medium text-gray-700">LCRF</label><input type="number" id="LCRF" value="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                                            <div><label for="LCFR" class="block text-sm font-medium text-gray-700">LCFR</label><input type="number" id="LCFR" value="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                                        </div>
+                                    </div>
+                                    <div id="two-sided-options" class="hidden">
+                                        <div id="two-sided-lc-inputs">
+                                            <label for="LCRR" class="block text-sm font-medium text-gray-700">LCRR (Ramp-to-Ramp Lane Changes)</label>
+                                            <input type="number" id="LCRR" value="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                        </div>
+                                        <p class="text-xs text-gray-500 mt-1">For Two-Sided Weave, NWL is automatically set to 0.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125V14.25m-17.25 4.5v-1.875a3.375 3.375 0 003.375-3.375h1.5a1.125 1.125 0 011.125 1.125v-1.5a3.375 3.375 0 00-3.375-3.375H3.375" /><path stroke-linecap="round" stroke-linejoin="round" d="M9 13.5l3 3m0 0l3-3m-3 3v-6m1.06-4.19l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>
+                                    <h2 class="thai-font">4. ปริมาณจราจรและรถบรรทุก</h2>
+                                </div>
+                                <div class="space-y-4">
+                                    <div class="movement-group">
+                                        <p class="text-sm font-semibold text-gray-800">Freeway-to-Freeway</p>
+                                        <div class="mt-2 space-y-2">
+                                            <div>
+                                                <label for="VFF" class="block text-xs font-medium text-gray-600">Demand (veh/h)</label>
+                                                <input type="number" id="VFF" value="1200" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div><label for="percent_sut_ff" class="block text-xs text-gray-600">% SUT</label><input type="number" id="percent_sut_ff" value="2" class="mt-1 w-full rounded-md text-sm" step="0.1" min="0"></div>
+                                                <div><label for="percent_tt_ff" class="block text-xs text-gray-600">% TT</label><input type="number" id="percent_tt_ff" value="5" class="mt-1 w-full rounded-md text-sm" step="0.1" min="0"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="movement-group">
+                                         <p class="text-sm font-semibold text-gray-800">Freeway-to-Ramp</p>
+                                        <div class="mt-2 space-y-2">
+                                            <div>
+                                                <label for="VFR" class="block text-xs font-medium text-gray-600">Demand (veh/h)</label>
+                                                <input type="number" id="VFR" value="1600" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div><label for="percent_sut_fr" class="block text-xs text-gray-600">% SUT</label><input type="number" id="percent_sut_fr" value="8" class="mt-1 w-full rounded-md text-sm" step="0.1" min="0"></div>
+                                                <div><label for="percent_tt_fr" class="block text-xs text-gray-600">% TT</label><input type="number" id="percent_tt_fr" value="12" class="mt-1 w-full rounded-md text-sm" step="0.1" min="0"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                     <div class="movement-group">
+                                        <p class="text-sm font-semibold text-gray-800">Ramp-to-Freeway</p>
+                                        <div class="mt-2 space-y-2">
+                                            <div>
+                                                <label for="VRF" class="block text-xs font-medium text-gray-600">Demand (veh/h)</label>
+                                                <input type="number" id="VRF" value="1700" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div><label for="percent_sut_rf" class="block text-xs text-gray-600">% SUT</label><input type="number" id="percent_sut_rf" value="1" class="mt-1 w-full rounded-md text-sm" step="0.1" min="0"></div>
+                                                <div><label for="percent_tt_rf" class="block text-xs text-gray-600">% TT</label><input type="number" id="percent_tt_rf" value="1" class="mt-1 w-full rounded-md text-sm" step="0.1" min="0"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="movement-group">
+                                        <p class="text-sm font-semibold text-gray-800">Ramp-to-Ramp</p>
+                                        <div class="mt-2 space-y-2">
+                                            <div>
+                                                <label for="VRR" class="block text-xs font-medium text-gray-600">Demand (veh/h)</label>
+                                                <input type="number" id="VRR" value="600" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div><label for="percent_sut_rr" class="block text-xs text-gray-600">% SUT</label><input type="number" id="percent_sut_rr" value="0" class="mt-1 w-full rounded-md text-sm" step="0.1" min="0"></div>
+                                                <div><label for="percent_tt_rr" class="block text-xs text-gray-600">% TT</label><input type="number" id="percent_tt_rr" value="0" class="mt-1 w-full rounded-md text-sm" step="0.1" min="0"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4 pt-4 border-t">
+                                     <label for="hv_analysis_mode" class="block text-sm font-medium text-gray-700 thai-font">โหมดวิเคราะห์รถบรรทุก (PCE)</label>
+                                     <select id="hv_analysis_mode" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                         <option value="general_terrain">General Terrain (ภูมิประเทศทั่วไป)</option>
+                                         <option value="specific_grade">Specific Grade (ความชันเฉพาะ)</option>
+                                     </select>
+                                </div>
+                                <div id="general-terrain-options" class="mt-4 space-y-4">
+                                     <label for="terrain_type" class="block text-sm font-medium text-gray-700 thai-font">ประเภทภูมิประเทศ</label>
+                                     <select id="terrain_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                         <option value="level">Level (ทางราบ, ET=2.0)</option>
+                                         <option value="rolling">Rolling (ทางเนิน, ET=3.0)</option>
+                                     </select>
+                                </div>
+                                 <div id="specific-grade-options" class="hidden mt-4 space-y-4">
+                                     <div class="grid grid-cols-2 gap-4">
+                                         <div><label for="grade_percent" class="block text-sm font-medium text-gray-700">Grade (%)</label><input type="number" id="grade_percent" value="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" step="0.1"></div>
+                                         <div><label for="grade_length_km" class="block text-sm font-medium text-gray-700">Length (km)</label><input type="number" id="grade_length_km" value="1.2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" step="0.1"></div>
+                                     </div>
+                                 </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-header">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" /></svg>
+                                    <h2 class="thai-font">5. ตัวคูณปรับแก้ (Adjustment Factors)</h2>
+                                </div>
+                                  <p class="text-xs text-gray-500 mb-2 thai-font">ปรับค่าเพื่อวิเคราะห์สถานการณ์พิเศษ เช่น สภาพอากาศไม่ดี (อ้างอิง HCM Ch.11)</p>
+                                  <div class="grid grid-cols-2 gap-4">
+                                      <div><label for="CAF" class="block text-sm font-medium text-gray-700">Capacity Adj. Factor (CAF)</label><input type="number" id="CAF" value="1.0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" step="0.01" min="0.3" max="1.2"></div>
+                                      <div><label for="SAF" class="block text-sm font-medium text-gray-700">Speed Adj. Factor (SAF)</label><input type="number" id="SAF" value="1.0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" step="0.01" min="0.5" max="1.2"></div>
+                                  </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2 flex flex-wrap gap-4 items-center justify-center pt-4">
+                        <button type="submit" class="w-full sm:w-auto bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out thai-font">วิเคราะห์</button>
+                        <button type="reset" id="reset-btn" class="w-full sm:w-auto bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out thai-font">ล้างข้อมูล</button>
+                        <button type="button" id="load-demo-btn" class="w-full sm:w-auto bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition duration-150 ease-in-out thai-font">โหลดข้อมูลตัวอย่าง</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Output Section -->
+            <div class="xl:col-span-1">
+                 <div class="space-y-6 sticky top-8">
+                    <div id="output-container" class="space-y-6 hidden">
+                        <div class="card">
+                            <h2 class="text-xl font-bold border-b pb-2 mb-4 thai-font">สรุปผลการวิเคราะห์ (Summary)</h2>
+                            <div id="summary-content" class="flex items-center space-x-8">
+                                <div id="los-badge-container" class="text-center">
+                                    <!-- LOS Badge will be inserted here -->
+                                </div>
+                                <div class="grid grid-cols-2 gap-x-8 gap-y-4 flex-grow">
+                                    <div><p class="text-sm text-gray-500 thai-font">ความหนาแน่น</p><p id="summary-density" class="text-lg font-bold"></p></div>
+                                    <div><p class="text-sm text-gray-500 thai-font">ความเร็วเฉลี่ย</p><p id="summary-speed" class="text-lg font-bold"></p></div>
+                                    <div><p class="text-sm text-gray-500 eng-font">v/c Ratio</p><p id="summary-vc" class="text-lg font-bold"></p></div>
+                                    <div><p class="text-sm text-gray-500 thai-font">ความจุ</p><p id="summary-capacity" class="text-lg font-bold"></p></div>
+                                </div>
+                            </div>
+                            <div id="summary-reason" class="mt-4 text-center text-sm text-indigo-700 bg-indigo-50 p-3 rounded-lg"></div>
+                        </div>
+
+                        <div id="alert-message" class="hidden p-4 rounded-lg"></div>
+                        
+                        <div class="card">
+                            <details>
+                                <summary class="text-lg thai-font">ขั้นตอนการคำนวณโดยละเอียด</summary>
+                                <div id="detailed-steps" class="mt-4 space-y-4 text-sm font-mono p-4 bg-gray-50 rounded-md overflow-x-auto">
+                                    <!-- Detailed steps will be inserted here -->
+                                </div>
+                            </details>
+                        </div>
+
+                         <div class="card no-print">
+                             <h2 class="text-xl font-bold border-b pb-2 mb-4 thai-font">ส่งออกรายงาน</h2>
+                             <div class="flex flex-wrap gap-4">
+                                  <button id="export-json-btn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-150 ease-in-out">Export to JSON</button>
+                                  <button id="print-report-btn" class="bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600 transition duration-150 ease-in-out thai-font">พิมพ์รายงาน (PDF)</button>
+                             </div>
+                        </div>
+                    </div>
+                     <div id="placeholder-container" class="card text-center text-gray-500 h-full flex flex-col justify-center items-center">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                         <h3 class="text-lg font-medium thai-font">ผลลัพธ์จะแสดงที่นี่</h3>
+                         <p class="mt-1 thai-font">กรุณากรอกข้อมูลและกดปุ่ม "วิเคราะห์"</p>
+                     </div>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Printable Report Area -->
+    <div id="printable-report" class="printable-area p-8"></div>
+
+
+    <script>
+        // --- START OF HCM7 WEAVING ENGINE (JavaScript Implementation) ---
+        // --- v2.7 ---
+
+        // -------- Constants & Unit factors --------
+        const FT_PER_M = 3.28084;
+        const MI_PER_KM = 0.621371;
+        const KM_PER_MI = 1.0 / MI_PER_KM;
+
+        const LOS_THRESH_FREEWAY = [10, 20, 28, 35, 43];
+        const LOS_THRESH_MLCD = [12, 24, 32, 36, 40];
+        
+        const ONE_SIDED_IMG_SRC = 'https://raw.githubusercontent.com/bokoboss/hcm7-weaving-segments/main/one-side.png';
+        const TWO_SIDED_IMG_SRC = 'https://raw.githubusercontent.com/bokoboss/hcm7-weaving-segments/main/two-side.png';
+        
+        const PCE_DATA = {
+            truck_pct_points: [2, 4, 5, 6, 8, 10, 15, 20, 25],
+            '30_70': { // Exhibit 12-26
+                '-2': { 0.125: [2.62, 2.37, 2.3, 2.24, 2.17, 2.12, 2.04, 1.99, 1.97], 1.5: [2.62, 2.37, 2.3, 2.24, 2.17, 2.12, 2.04, 1.99, 1.97] },
+                '0':  { 0.125: [2.62, 2.37, 2.3, 2.24, 2.17, 2.12, 2.04, 1.99, 1.97], 1.5: [2.62, 2.37, 2.3, 2.24, 2.17, 2.12, 2.04, 1.99, 1.97] },
+                '2':  { 0.125: [2.62, 2.37, 2.3, 2.24, 2.17, 2.12, 2.04, 1.99, 1.97], 0.375: [3.76, 2.96, 2.78, 2.65, 2.48, 2.38, 2.22, 2.14, 2.09], 0.625: [4.47, 3.33, 3.08, 2.91, 2.68, 2.54, 2.34, 2.23, 2.17], 0.875: [4.8, 3.5, 3.22, 3.03, 2.77, 2.61, 2.39, 2.28, 2.21], 1.25: [5, 3.6, 3.3, 3.09, 2.83, 2.66, 2.42, 2.3, 2.23], 1.5: [5.04, 3.62, 3.32, 3.11, 2.84, 2.67, 2.43, 2.31, 2.23]},
+                '2.5':{ 0.125: [2.62, 2.37, 2.3, 2.24, 2.17, 2.12, 2.04, 1.99, 1.97], 0.375: [4.11, 3.14, 2.93, 2.78, 2.58, 2.46, 2.28, 2.19, 2.13], 0.625: [5.04, 3.62, 3.32, 3.11, 2.84, 2.67, 2.43, 2.31, 2.23], 0.875: [5.48, 3.85, 3.51, 3.27, 2.96, 2.77, 2.5, 2.36, 2.28], 1.25: [5.73, 3.98, 3.61, 3.36, 3.03, 2.83, 2.54, 2.4, 2.31], 1.5: [5.8, 4.02, 3.64, 3.38, 3.05, 2.84, 2.55, 2.41, 2.32]},
+                '3.5':{ 0.125: [2.62, 2.37, 2.3, 2.24, 2.17, 2.12, 2.04, 1.99, 1.97], 0.375: [4.88, 3.54, 3.25, 3.05, 2.8, 2.63, 2.41, 2.29, 2.22], 0.625: [6.34, 4.3, 3.87, 3.58, 3.2, 2.97, 2.64, 2.48, 2.38], 0.875: [7.03, 4.66, 4.16, 3.83, 3.39, 3.12, 2.76, 2.57, 2.46], 1.25: [7.44, 4.87, 4.33, 3.97, 3.5, 3.22, 2.82, 2.62, 2.5], 1.5: [7.53, 4.92, 4.38, 4.01, 3.53, 3.24, 2.84, 2.63, 2.51]},
+                '4.5':{ 0.125: [2.62, 2.37, 2.3, 2.24, 2.17, 2.12, 2.04, 1.99, 1.97], 0.375: [5.8, 4.02, 3.64, 3.38, 3.05, 2.84, 2.55, 2.41, 2.32], 0.625: [7.9, 5.11, 4.53, 4.14, 3.63, 3.32, 2.9, 2.68, 2.55], 0.875: [8.91, 5.64, 4.96, 4.5, 3.92, 3.56, 3.07, 2.82, 2.67], 1: [9.19, 5.78, 5.08, 4.6, 3.99, 3.62, 3.11, 2.85, 2.7]},
+                '5.5':{ 0.125: [2.62, 2.37, 2.3, 2.24, 2.17, 2.12, 2.04, 1.99, 1.97], 0.375: [6.87, 4.58, 4.1, 3.77, 3.35, 3.09, 2.73, 2.55, 2.44], 0.625: [9.78, 6.09, 5.33, 4.82, 4.16, 3.76, 3.21, 2.93, 2.77], 0.875: [11.2, 6.83, 5.94, 5.33, 4.56, 4.09, 3.45, 3.12, 2.93], 1: [11.6, 7.04, 6.11, 5.47, 4.67, 4.18, 3.51, 3.17, 2.97]},
+                '6':  { 0.125: [2.62, 2.37, 2.3, 2.24, 2.17, 2.12, 2.04, 1.99, 1.97], 0.375: [7.48, 4.9, 4.36, 3.99, 3.52, 3.23, 2.83, 2.63, 2.51], 0.625: [10.87, 6.66, 5.79, 5.21, 4.46, 4.01, 3.39, 3.08, 2.89], 0.875: [12.54, 7.54, 6.51, 5.81, 4.94, 4.4, 3.67, 3.3, 3.08], 1: [13.02, 7.78, 6.71, 5.99, 5.07, 4.51, 3.75, 3.37, 3.14]}
+            },
+            '50_50': { // Exhibit 12-27
+                '-2': { 0.125: [2.67, 2.38, 2.31, 2.25, 2.16, 2.11, 2.02, 1.97, 1.93], 1.5: [2.67, 2.38, 2.31, 2.25, 2.16, 2.11, 2.02, 1.97, 1.93]},
+                '0':  { 0.125: [2.67, 2.38, 2.31, 2.25, 2.16, 2.11, 2.02, 1.97, 1.93], 1.5: [2.67, 2.38, 2.31, 2.25, 2.16, 2.11, 2.02, 1.97, 1.93]},
+                '2':  { 0.125: [2.67, 2.38, 2.31, 2.25, 2.16, 2.11, 2.02, 1.97, 1.93], 0.375: [3.76, 2.95, 2.77, 2.64, 2.47, 2.36, 2.2, 2.11, 2.06], 0.625: [4.32, 3.24, 3.01, 2.84, 2.63, 2.49, 2.29, 2.19, 2.12], 0.875: [4.57, 3.37, 3.11, 2.93, 2.7, 2.55, 2.33, 2.22, 2.15], 1.25: [4.71, 3.45, 3.17, 2.99, 2.74, 2.58, 2.36, 2.24, 2.17], 1.5: [4.74, 3.47, 3.19, 3, 2.75, 2.59, 2.36, 2.24, 2.17]},
+                '2.5':{ 0.125: [2.67, 2.38, 2.31, 2.25, 2.16, 2.11, 2.02, 1.97, 1.93], 0.375: [4.1, 3.13, 2.92, 2.77, 2.57, 2.44, 2.26, 2.16, 2.1], 0.625: [4.84, 3.52, 3.23, 3.03, 2.77, 2.61, 2.38, 2.26, 2.18], 0.875: [5.17, 3.69, 3.37, 3.15, 2.87, 2.69, 2.43, 2.3, 2.22], 1.25: [5.36, 3.79, 3.45, 3.22, 2.92, 2.73, 2.47, 2.33, 2.24], 1.5: [5.4, 3.81, 3.47, 3.24, 2.93, 2.74, 2.47, 2.33, 2.25]},
+                '3.5':{ 0.125: [2.67, 2.38, 2.31, 2.25, 2.16, 2.11, 2.02, 1.97, 1.93], 0.375: [4.89, 3.54, 3.25, 3.05, 2.79, 2.62, 2.39, 2.26, 2.19], 0.625: [6.05, 4.15, 3.75, 3.47, 3.11, 2.89, 2.58, 2.42, 2.32], 0.875: [6.58, 4.43, 3.97, 3.66, 3.26, 3.01, 2.67, 2.49, 2.39], 1.25: [6.88, 4.58, 4.1, 3.77, 3.35, 3.09, 2.72, 2.53, 2.42], 1.5: [6.95, 4.62, 4.13, 3.8, 3.37, 3.1, 2.73, 2.54, 2.43]},
+                '4.5':{ 0.125: [2.67, 2.38, 2.31, 2.25, 2.16, 2.11, 2.02, 1.97, 1.93], 0.375: [5.83, 4.03, 3.65, 3.39, 3.05, 2.84, 2.55, 2.39, 2.3], 0.625: [7.53, 4.92, 4.38, 4.01, 3.53, 3.24, 2.83, 2.62, 2.5], 0.875: [8.32, 5.34, 4.72, 4.29, 3.75, 3.42, 2.97, 2.73, 2.59], 1: [8.53, 5.45, 4.81, 4.37, 3.81, 3.47, 3, 2.76, 2.62]},
+                '5.5':{ 0.125: [2.67, 2.38, 2.31, 2.25, 2.16, 2.11, 2.02, 1.97, 1.93], 0.375: [6.97, 4.63, 4.14, 3.81, 3.38, 3.11, 2.74, 2.55, 2.43], 0.625: [9.37, 5.89, 5.16, 4.68, 4.05, 3.67, 3.14, 2.88, 2.72], 0.875: [10.49, 6.48, 5.65, 5.09, 4.37, 3.93, 3.34, 3.03, 2.85], 1: [10.8, 6.64, 5.78, 5.2, 4.46, 4.01, 3.39, 3.08, 2.89]},
+                '6':  { 0.125: [2.67, 2.38, 2.31, 2.25, 2.16, 2.11, 2.02, 1.97, 1.93], 0.375: [7.64, 4.98, 4.43, 4.05, 3.56, 3.26, 2.85, 2.64, 2.51], 0.625: [10.45, 6.45, 5.63, 5.07, 4.36, 3.92, 3.33, 3.03, 2.85], 0.875: [11.78, 7.16, 6.2, 5.56, 4.74, 4.24, 3.56, 3.22, 3.01], 1: [12.15, 7.35, 6.36, 5.69, 4.85, 4.33, 3.62, 3.27, 3.05]}
+            },
+            '70_30': { // Exhibit 12-28
+                '-2': { 0.125: [2.39, 2.18, 2.12, 2.07, 2.01, 1.96, 1.89, 1.85, 1.83], 1.5: [2.39, 2.18, 2.12, 2.07, 2.01, 1.96, 1.89, 1.85, 1.83]},
+                '0':  { 0.125: [2.39, 2.18, 2.12, 2.07, 2.01, 1.96, 1.89, 1.85, 1.83], 1.5: [2.39, 2.18, 2.12, 2.07, 2.01, 1.96, 1.89, 1.85, 1.83]},
+                '2':  { 0.125: [2.67, 2.32, 2.23, 2.17, 2.08, 2.03, 1.94, 1.89, 1.86], 0.375: [3.63, 2.82, 2.64, 2.52, 2.35, 2.25, 2.1, 2.02, 1.97], 0.625: [4.12, 3.08, 2.85, 2.69, 2.49, 2.36, 2.18, 2.08, 2.02], 0.875: [4.37, 3.21, 2.96, 2.78, 2.56, 2.42, 2.22, 2.11, 2.05], 1.25: [4.53, 3.29, 3.02, 2.84, 2.6, 2.45, 2.24, 2.13, 2.07], 1.5: [4.58, 3.31, 3.04, 2.86, 2.61, 2.46, 2.25, 2.14, 2.07]},
+                '2.5':{ 0.125: [2.75, 2.36, 2.27, 2.2, 2.11, 2.04, 1.95, 1.9, 1.87], 0.375: [4.01, 3.02, 2.8, 2.65, 2.46, 2.33, 2.16, 2.06, 2.01], 0.625: [4.66, 3.35, 3.08, 2.88, 2.64, 2.48, 2.26, 2.15, 2.08], 0.875: [4.99, 3.52, 3.21, 3, 2.73, 2.56, 2.32, 2.19, 2.12], 1.25: [5.2, 3.64, 3.3, 3.08, 2.79, 2.6, 2.35, 2.22, 2.14], 1.5: [5.26, 3.67, 3.33, 3.1, 2.8, 2.62, 2.36, 2.23, 2.15]},
+                '3.5':{ 0.125: [2.93, 2.45, 2.34, 2.26, 2.16, 2.09, 1.98, 1.92, 1.89], 0.375: [4.86, 3.46, 3.16, 2.96, 2.69, 2.53, 2.3, 2.18, 2.1], 0.625: [5.88, 3.99, 3.59, 3.32, 2.98, 2.76, 2.46, 2.31, 2.22], 0.875: [6.4, 4.26, 3.81, 3.51, 3.12, 2.88, 2.55, 2.38, 2.28], 1.25: [6.74, 4.43, 3.96, 3.63, 3.21, 2.96, 2.6, 2.42, 2.32], 1.5: [6.83, 4.48, 3.99, 3.66, 3.24, 2.98, 2.62, 2.44, 2.33]},
+                '4.5':{ 0.125: [3.13, 2.56, 2.43, 2.34, 2.21, 2.13, 2.01, 1.95, 1.91], 0.375: [5.88, 3.99, 3.59, 3.32, 2.98, 2.76, 2.46, 2.31, 2.22], 0.625: [7.35, 4.75, 4.22, 3.85, 3.39, 3.1, 2.71, 2.51, 2.39], 0.875: [8.11, 5.15, 4.54, 4.13, 3.6, 3.27, 2.83, 2.61, 2.47], 1: [8.33, 5.27, 4.63, 4.21, 3.66, 3.33, 2.87, 2.64, 2.5]},
+                '5.5':{ 0.125: [3.37, 2.69, 2.53, 2.42, 2.28, 2.19, 2.05, 1.98, 1.94], 0.375: [7.09, 4.62, 4.11, 3.76, 3.31, 3.04, 2.66, 2.47, 2.36], 0.625: [9.13, 5.68, 4.97, 4.49, 3.88, 3.51, 3, 2.74, 2.59], 0.875: [10.21, 6.24, 5.43, 4.88, 4.18, 3.76, 3.18, 2.89, 2.71], 1: [10.52, 6.41, 5.57, 5, 4.27, 3.83, 3.24, 2.93, 2.75]},
+                '6':  { 0.125: [3.51, 2.76, 2.59, 2.47, 2.32, 2.22, 2.08, 2, 1.95], 0.375: [7.78, 4.98, 4.4, 4.01, 3.51, 3.2, 2.78, 2.56, 2.44], 0.625: [10.17, 6.23, 5.42, 4.87, 4.17, 3.75, 3.18, 2.88, 2.71], 0.875: [11.43, 6.88, 5.95, 5.32, 4.53, 4.04, 3.39, 3.06, 2.86], 1: [11.81, 7.08, 6.11, 5.46, 4.64, 4.13, 3.45, 3.11, 2.9]}
+            }
+        };
+
+
+        // -------- Ch.12 helpers --------
+        const _clip = (val, lo = null, hi = null) => {
+            if (lo !== null) val = Math.max(lo, val);
+            if (hi !== null) val = Math.min(hi, val);
+            return val;
+        };
+
+        const _interpolate1D = (x, x_pts, y_pts) => {
+            if (x <= x_pts[0]) return y_pts[0];
+            if (x >= x_pts[x_pts.length - 1]) return y_pts[y_pts.length - 1];
+            let i = 1;
+            while (i < x_pts.length && x > x_pts[i]) i++;
+            const x0 = x_pts[i-1], y0 = y_pts[i-1];
+            const x1 = x_pts[i], y1 = y_pts[i];
+            return y0 + (y1 - y0) * ((x - x0) / (x1 - x0));
+        };
+        
+        function _estimateFFS(inputs) {
+            const { facility_type, BFFS_kmh, lane_width_m, N } = inputs;
+            const BFFS_mph = BFFS_kmh * MI_PER_KM;
+            let FFS = BFFS_mph;
+            const trace = {};
+
+            const lane_width_ft = lane_width_m * FT_PER_M;
+            let f_LW = 0;
+            if (lane_width_ft < 11) f_LW = 6.6;
+            else if (lane_width_ft < 12) f_LW = 1.9;
+            FFS -= f_LW;
+            trace.f_LW = f_LW;
+
+            if (facility_type === 'freeway') {
+                const rlc_ft = (inputs.rlc_m || 0) * FT_PER_M;
+                const rlc_pts_x = [0, 1, 2, 3, 4, 5, 6];
+                const rlc_pts_y_map = { 2: [3.6, 3.0, 2.4, 1.8, 1.2, 0.6, 0.0], 3: [2.4, 2.0, 1.6, 1.2, 0.8, 0.4, 0.0], 4: [1.2, 1.0, 0.8, 0.6, 0.4, 0.2, 0.0], 5: [0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0]};
+                const rlc_lanes = _clip(N, 2, 5);
+                const f_RLC = _interpolate1D(rlc_ft, rlc_pts_x, rlc_pts_y_map[rlc_lanes]);
+                FFS -= f_RLC;
+                trace.f_RLC = f_RLC;
+
+                const TRD = (inputs.trd_per_km || 0) / MI_PER_KM;
+                const f_TRD = 3.22 * Math.pow(TRD, 0.84);
+                FFS -= f_TRD;
+                trace.f_TRD = f_TRD;
+            } else { // multilane_cd
+                const tlc_ft = (inputs.tlc_m || 0) * FT_PER_M;
+                const tlc_pts_x = [0, 2, 4, 6, 8, 10, 12];
+                const tlc_pts_y = (N >= 3) ? [3.9, 2.8, 1.7, 1.3, 0.9, 0.4, 0.0] : [5.4, 3.6, 1.8, 1.3, 0.9, 0.4, 0.0];
+                const f_TLC = _interpolate1D(tlc_ft, tlc_pts_x.slice().reverse(), tlc_pts_y);
+                FFS -= f_TLC;
+                trace.f_TLC = f_TLC;
+                
+                const f_M = (inputs.median_type === 'undivided') ? 1.6 : 0.0;
+                FFS -= f_M;
+                trace.f_M = f_M;
+
+                const APD = (inputs.access_points_per_km || 0) / MI_PER_KM;
+                const f_A = 0.25 * APD;
+                FFS -= f_A;
+                trace.f_A = f_A;
+            }
+            return { FFS_mph: FFS, trace: trace };
+        }
+
+        const _cIFL_from_ch12 = (FFS_mph, SAF, facility_type) => {
+            if (FFS_mph === null || FFS_mph === undefined) return null;
+            if (facility_type === "multilane_cd") {
+                const final_FFS = _clip(FFS_mph, null, 70.0);
+                const c = 1900.0 + 20.0 * (final_FFS - 45.0);
+                return Math.min(c, 2300.0);
+            } else { // freeway
+                const FFS_adj = FFS_mph * (SAF || 1.0);
+                const final_FFS = _clip(FFS_adj, null, 75.0);
+                const c = 2200.0 + 10.0 * (final_FFS - 50.0);
+                return Math.min(c, 2400.0);
+            }
+        };
+        
+        function _getPceForSpecificGrade(grade, length_mi, percent_trucks, truck_mix) {
+            if (grade <= 0) { // For downgrade or flat, use default rolling/level terrain logic
+                const flat_pce_table = PCE_DATA[truck_mix][-2] || PCE_DATA[truck_mix][0];
+                const flat_pce_for_length = flat_pce_table[Object.keys(flat_pce_table)[0]];
+                return _interpolate1D(percent_trucks, PCE_DATA.truck_pct_points, flat_pce_for_length);
+            }
+
+            const table = PCE_DATA[truck_mix];
+            if (!table) return 3.0; // Fallback to rolling terrain
+
+            const grade_pts = Object.keys(table).map(parseFloat).sort((a,b)=>a-b);
+            
+            let g_low = grade_pts[0];
+            let g_high = grade_pts[grade_pts.length-1];
+
+            if (grade < g_low) { grade = g_low; }
+            if (grade > g_high) { grade = g_high; }
+            
+            for (let i = 0; i < grade_pts.length-1; i++) {
+                if (grade >= grade_pts[i] && grade <= grade_pts[i+1]) {
+                    g_low = grade_pts[i];
+                    g_high = grade_pts[i+1];
+                    break;
+                }
+            }
+          
+            const pce_at_g_low = _interpolateForLengthAndPct(g_low, length_mi, percent_trucks, table);
+            if (g_low === g_high) return pce_at_g_low;
+            
+            const pce_at_g_high = _interpolateForLengthAndPct(g_high, length_mi, percent_trucks, table);
+            
+            return _interpolate1D(grade, [g_low, g_high], [pce_at_g_low, pce_at_g_high]);
+        }
+
+        function _interpolateForLengthAndPct(grade, length_mi, percent_trucks, table) {
+             const grade_table = table[grade];
+             const length_pts = Object.keys(grade_table).map(parseFloat).sort((a,b)=>a-b);
+             
+             let l_low = length_pts[0];
+             let l_high = length_pts[length_pts.length-1];
+
+             if (length_mi < l_low) { length_mi = l_low; }
+             if (length_mi > l_high) { length_mi = l_high; }
+
+             for(let i=0; i < length_pts.length-1; i++){
+                 if(length_mi >= length_pts[i] && length_mi <= length_pts[i+1]){
+                     l_low = length_pts[i];
+                     l_high = length_pts[i+1];
+                     break;
+                 }
+             }
+
+             const pce_at_l_low = _interpolate1D(percent_trucks, PCE_DATA.truck_pct_points, grade_table[l_low]);
+             if(l_low === l_high) return pce_at_l_low;
+
+             const pce_at_l_high = _interpolate1D(percent_trucks, PCE_DATA.truck_pct_points, grade_table[l_high]);
+             
+             return _interpolate1D(length_mi, [l_low, l_high], [pce_at_l_low, pce_at_l_high]);
+        }
+
+        function get_ET_for_movement(si, p_sut, p_tt) {
+            const total_percent_heavy = p_sut + p_tt;
+            if (total_percent_heavy === 0) return 1.0;
+
+            if (si.hv_analysis_mode === 'specific_grade') {
+                const length_mi = (si.grade_length_km || 0) * MI_PER_KM;
+                const prop_sut = total_percent_heavy > 0 ? p_sut / total_percent_heavy : 0;
+
+                const pce30 = _getPceForSpecificGrade(si.grade_percent, length_mi, total_percent_heavy, '30_70');
+                const pce50 = _getPceForSpecificGrade(si.grade_percent, length_mi, total_percent_heavy, '50_50');
+                const pce70 = _getPceForSpecificGrade(si.grade_percent, length_mi, total_percent_heavy, '70_30');
+                
+                return _interpolate1D(prop_sut, [0.3, 0.5, 0.7], [pce30, pce50, pce70]);
+            } else {
+                return (si.terrain_type || "level") === "level" ? 2.0 : 3.0;
+            }
+        }
+        
+        function get_fHV_for_movement(ET, p_sut, p_tt) {
+            const PT = (p_sut + p_tt) / 100.0;
+            if (PT === 0) return 1.0;
+            return 1.0 / (1.0 + PT * (ET - 1.0));
+        }
+
+        function classify_los(density, facility_type) {
+            const thresholds = facility_type === 'freeway' ? LOS_THRESH_FREEWAY : LOS_THRESH_MLCD;
+            if (density <= thresholds[0]) return 'A';
+            if (density <= thresholds[1]) return 'B';
+            if (density <= thresholds[2]) return 'C';
+            if (density <= thresholds[3]) return 'D';
+            if (density <= thresholds[4]) return 'E';
+            return 'F';
+        }
+
+        function compute(inputs_si) {
+            const trace = [];
+            
+            let FFS_kmh, FFS_mph;
+            if(inputs_si.ffs_mode === 'estimate') {
+                const ffs_result = _estimateFFS(inputs_si);
+                FFS_mph = ffs_result.FFS_mph;
+                FFS_kmh = FFS_mph / MI_PER_KM;
+                trace.push({ step: "Step 1: Estimate FFS", equation: `Eq. 12-2/3 for ${inputs_si.facility_type}`, variables_US: ffs_result.trace, result: { FFS_mph: FFS_mph } });
+            } else {
+                FFS_kmh = inputs_si.FFS_kmh;
+                FFS_mph = FFS_kmh * MI_PER_KM;
+                trace.push({ step: "Step 1: FFS", equation: "Manual Input", variables_US: {}, result: { FFS_mph: FFS_mph } });
+            }
+            const final_inputs_si = {...inputs_si, FFS_kmh: FFS_kmh};
+            const { N, ID_per_km, PHF, SAF, CAF, weave_type, NWL, LCRF, LCFR, LCRR, facility_type, LS_m } = final_inputs_si;
+            const LS = LS_m * FT_PER_M;
+            const ID = ID_per_km / MI_PER_KM;
+
+            // Step 2: Adjust Volume (Directional HV)
+            const movements = ['ff', 'fr', 'rf', 'rr'];
+            const V = {};
+            const p_sut = {};
+            const p_tt = {};
+            const ET = {};
+            const fHV = {};
+            const v = {};
+
+            movements.forEach(m => {
+                V[m] = final_inputs_si[`V${m.toUpperCase()}`];
+                p_sut[m] = final_inputs_si[`percent_sut_${m}`];
+                p_tt[m] = final_inputs_si[`percent_tt_${m}`];
+                ET[m] = get_ET_for_movement(final_inputs_si, p_sut[m], p_tt[m]);
+                fHV[m] = get_fHV_for_movement(ET[m], p_sut[m], p_tt[m]);
+                v[m] = V[m] / (PHF * fHV[m]);
+            });
+
+            const vFF = v.ff, vFR = v.fr, vRF = v.rf, vRR = v.rr;
+
+            let vW, vNW;
+            if (weave_type === "one_sided") { vW = vRF + vFR; vNW = vFF + vRR; } else { vW = vRR; vNW = vFF + vFR + vRF; }
+            const v_total_pc = vW + vNW;
+            const VR = (v_total_pc > 0) ? (vW / v_total_pc) : 0.0;
+            
+            trace.push({ step: "Step 2: Adjust Volume (Eq. 13-1)", equation: "Directional fHV", variables_US: { PHF, fHV_ff: fHV.ff, fHV_fr: fHV.fr, fHV_rf: fHV.rf, fHV_rr: fHV.rr }, result: { vFF, vFR, vRF, vRR, vW, vNW, v_total_pc, VR } });
+
+            // Step 3: Configuration
+            let LCMIN;
+            if (weave_type === "one_sided") { LCMIN = (LCRF * vRF) + (LCFR * vFR); } else { LCMIN = LCRR * vRR; }
+            trace.push({ step: "Step 3: Configuration (Eq. 13-2/3)", equation: "", variables_US: { LCRF, LCFR, LCRR, vRF, vFR, vRR }, result: { LCMIN, NWL } });
+            
+            // Step 4: Max Weaving Length
+            const LMAX = 5728.0 * Math.pow(1.0 + VR, 1.6) - (1566.0 * NWL);
+            const LS_ge_LMAX = (LS >= LMAX);
+            trace.push({ step: "Step 4: Max Weaving Length (Eq. 13-4)", equation: "", variables_US: { VR, NWL }, result: { LMAX_ft: LMAX.toFixed(2), LS_ft: LS.toFixed(2), LS_ge_LMAX } });
+
+            if (LS_ge_LMAX) {
+                return { summary: { LOS: "N/A", governing_reason: `LS (${LS.toFixed(0)} ft) ≥ LMAX (${LMAX.toFixed(0)} ft). Analyze as separate merge/diverge (Ch.14).` }, flags: { LS_ge_LMAX: true }, trace, full_input_si: final_inputs_si };
+            }
+            
+            // Step 5: Capacity
+            const cIFL = _cIFL_from_ch12(FFS_mph, SAF, facility_type);
+            const cIWL_pcphpl = cIFL - (438.2 * Math.pow(1.0 + VR, 1.6)) + (0.0765 * LS) + (119.8 * NWL);
+            const cW_density_pc = cIWL_pcphpl * N;
+            
+            let cW_weave_pc = null;
+            if ([2, 3].includes(NWL) && VR > 0.0) { 
+                const threshold = (NWL === 2) ? 2400.0 : 3500.0;
+                cW_weave_pc = (threshold / VR); 
+            }
+            
+            let capacity_prevailing_pc, governing_source;
+            if (cW_weave_pc !== null) { 
+                capacity_prevailing_pc = Math.min(cW_density_pc, cW_weave_pc); 
+                governing_source = (cW_weave_pc <= cW_density_pc) ? "Weaving Flow Governed" : "Density Governed"; 
+            } else { 
+                capacity_prevailing_pc = cW_density_pc; 
+                governing_source = "Density Governed"; 
+            }
+            
+            const cWA_pc = (facility_type === 'freeway') ? capacity_prevailing_pc * CAF : capacity_prevailing_pc;
+            const vc = (cWA_pc > 0) ? (v_total_pc / cWA_pc) : Infinity;
+            const oversaturated = vc > 1.0;
+            
+            const total_V = V.ff + V.fr + V.rf + V.rr;
+            const total_sut_vol = (V.ff*p_sut.ff/100) + (V.fr*p_sut.fr/100) + (V.rf*p_sut.rf/100) + (V.rr*p_sut.rr/100);
+            const total_tt_vol = (V.ff*p_tt.ff/100) + (V.fr*p_tt.fr/100) + (V.rf*p_tt.rf/100) + (V.rr*p_tt.rr/100);
+            const overall_p_sut = total_V > 0 ? (total_sut_vol / total_V) * 100 : 0;
+            const overall_p_tt = total_V > 0 ? (total_tt_vol / total_V) * 100 : 0;
+            const overall_ET = get_ET_for_movement(final_inputs_si, overall_p_sut, overall_p_tt);
+            const overall_fHV = get_fHV_for_movement(overall_ET, overall_p_sut, overall_p_tt);
+            const capacity_cWA_vehph = cWA_pc * overall_fHV; // For display only
+
+            trace.push({ step: "Step 5: Capacity & v/c (Eq. 13-5 to 13-10)", equation: "", variables_US: { cIFL, VR, LS, NWL, N, CAF_used: (facility_type === 'freeway' ? CAF : 1.0) }, result: { cIWL_pcphpl, cW_density_pc, cW_weave_pc, cWA_pc, v_total_pc, v_by_c: vc, governing_source } });
+
+            if (oversaturated) {
+                return { summary: { LOS: "F", v_by_c: vc, capacity_vehph: capacity_cWA_vehph, governing_reason: `v/c Ratio (${vc.toFixed(2)}) > 1.0. Segment is oversaturated.` }, flags: { oversaturated: true }, capacity: {capacity_vehph: capacity_cWA_vehph }, trace, full_input_si: final_inputs_si };
+            }
+
+            // Step 6: Lane Changing
+            const LS_eff = Math.max(LS, 300.0);
+            const LCW = LCMIN + 0.39 * Math.pow(LS_eff - 300.0, 0.5) * Math.pow(N, 2) * Math.pow(1.0 + ID, 0.8);
+            const INW = (LS * ID * vNW) / 10000.0;
+            const LCNW1 = Math.max(0.0, 0.206 * vNW + 0.542 * LS - 192.6 * N);
+            const LCNW2 = 2135.0 + 0.223 * (vNW - 2000.0);
+            let LCNW;
+            if (INW <= 1300.0) { LCNW = LCNW1; } 
+            else if (INW >= 1950.0) { LCNW = LCNW2; } 
+            else { LCNW = LCNW1 >= LCNW2 ? LCNW2 : LCNW1 + (LCNW2 - LCNW1) * ((INW - 1300.0) / 650.0); }
+            const LCALL = LCW + LCNW;
+            trace.push({ step: "Step 6: Lane Changing (Eq. 13-11 to 13-17)", equation: "", variables_US: { LS_eff, ID, N, vNW, INW }, result: { LCMIN, LCW, LCNW, LCALL } });
+
+            // Step 7: Speeds
+            const FFS_adj_mph = (facility_type === 'freeway') ? FFS_mph * SAF : FFS_mph;
+            const W = (LS > 0) ? 0.226 * Math.pow(LCALL / LS, 0.789) : 0.0;
+            const SW_mph = 15.0 + (FFS_adj_mph - 15.0) / (1.0 + W);
+            const SNW_mph = FFS_adj_mph - (0.0072 * LCMIN) - (0.0048 * (v_total_pc / N));
+            const S_mph = ((vW + vNW) / ((vW / SW_mph) + (vNW / SNW_mph))) || 0.0;
+            trace.push({ step: "Step 7: Speeds (Eq. 13-19 to 13-22)", equation: "", variables_US: { FFS_adj_mph, LCALL, LS, LCMIN, v_total_pc, N }, result: { W, SW_mph, SNW_mph, S_mph } });
+
+            // Step 8: Density & LOS
+            const D_pc_per_mi_per_ln = (N > 0 && S_mph > 0) ? ((v_total_pc / N) / S_mph) : Infinity;
+            const LOS = classify_los(D_pc_per_mi_per_ln, facility_type);
+            trace.push({ step: "Step 8: Density & LOS (Eq. 13-23)", equation: "", variables_US: { v_total_pc, N, S_mph }, result: { D_pc_per_mi_per_ln, LOS } });
+
+            return {
+                summary: { LOS, v_by_c: vc, capacity_vehph: capacity_cWA_vehph, avg_speed_kmh: S_mph * KM_PER_MI, density_pc_per_km_per_ln: D_pc_per_mi_per_ln / KM_PER_MI, governing_reason: governing_source },
+                capacity: { capacity_vehph: capacity_cWA_vehph }, flags: { oversaturated: false, LS_ge_LMAX: false }, trace, full_input_si: final_inputs_si
+            };
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('analysis-form');
+            const outputContainer = document.getElementById('output-container');
+            const placeholderContainer = document.getElementById('placeholder-container');
+            
+            const weaveTypeSelect = document.getElementById('weave_type');
+            const oneSidedOptions = document.getElementById('one-sided-options');
+            const twoSidedOptions = document.getElementById('two-sided-options');
+            const analysisPeriodSelect = document.getElementById('analysis_period');
+            const phfInputContainer = document.getElementById('phf-input-container');
+
+            const hvModeSelect = document.getElementById('hv_analysis_mode');
+            const generalTerrainOptions = document.getElementById('general-terrain-options');
+            const specificGradeOptions = document.getElementById('specific-grade-options');
+            
+            const ffsModeSelect = document.getElementById('ffs_mode');
+            const ffsManualInput = document.getElementById('ffs-manual-input');
+            const ffsEstimateInputs = document.getElementById('ffs-estimate-inputs');
+            const facilityTypeSelect = document.getElementById('facility_type');
+            const ffsFreewayOptions = document.getElementById('ffs-freeway-options');
+            const ffsMultilaneOptions = document.getElementById('ffs-multilane-options');
+
+            const weaveDiagramImg = document.getElementById('weave-diagram-img');
+
+            let lastResult = null;
+
+            // Event Listeners
+            weaveTypeSelect.addEventListener('change', (e) => {
+                const isOneSided = e.target.value === 'one_sided';
+                oneSidedOptions.classList.toggle('hidden', !isOneSided);
+                twoSidedOptions.classList.toggle('hidden', isOneSided);
+                document.getElementById('NWL').toggleAttribute('disabled', !isOneSided);
+                weaveDiagramImg.src = isOneSided ? ONE_SIDED_IMG_SRC : TWO_SIDED_IMG_SRC;
+                if(!isOneSided) {
+                    document.getElementById('NWL').value = 0;
+                }
+            });
+
+            analysisPeriodSelect.addEventListener('change', (e) => {
+                const isHourly = e.target.value === 'hourly';
+                phfInputContainer.classList.toggle('hidden', !isHourly);
+                if (!isHourly) {
+                    document.getElementById('PHF').value = 1.0;
+                }
+            });
+
+            hvModeSelect.addEventListener('change', (e) => {
+                generalTerrainOptions.classList.toggle('hidden', e.target.value !== 'general_terrain');
+                specificGradeOptions.classList.toggle('hidden', e.target.value !== 'specific_grade');
+            });
+            
+            const handleFfsModeChange = () => {
+                const isManual = ffsModeSelect.value === 'manual';
+                ffsManualInput.classList.toggle('hidden', !isManual);
+                ffsEstimateInputs.classList.toggle('hidden', isManual);
+                handleFacilityTypeChange();
+            }
+
+            const handleFacilityTypeChange = () => {
+                const isFreeway = facilityTypeSelect.value === 'freeway';
+                ffsFreewayOptions.classList.toggle('hidden', !isFreeway);
+                ffsMultilaneOptions.classList.toggle('hidden', isFreeway);
+            };
+            
+            ffsModeSelect.addEventListener('change', handleFfsModeChange);
+            facilityTypeSelect.addEventListener('change', handleFfsModeChange);
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const getFloat = id => parseFloat(document.getElementById(id).value) || 0;
+                const getInt = id => parseInt(document.getElementById(id).value) || 0;
+                const val = id => document.getElementById(id).value;
+
+                const inputsSI = {
+                    facility_type: val('facility_type'),
+                    period_type: val('analysis_period'),
+                    LS_m: getFloat('LS_m'), N: getInt('N'), ID_per_km: getFloat('ID_per_km'),
+                    ffs_mode: val('ffs_mode'),
+                    FFS_kmh: getFloat('FFS_kmh'),
+                    BFFS_kmh: getFloat('BFFS_kmh'),
+                    lane_width_m: getFloat('lane_width_m'),
+                    rlc_m: getFloat('rlc_m'),
+                    trd_per_km: getFloat('trd_per_km'),
+                    tlc_m: getFloat('tlc_m'),
+                    median_type: val('median_type'),
+                    access_points_per_km: getFloat('access_points_per_km'),
+                    weave_type: val('weave_type'),
+                    NWL: val('weave_type') === 'two_sided' ? 0 : getInt('NWL'),
+                    LCRF: val('weave_type') === 'one_sided' ? getFloat('LCRF') : null,
+                    LCFR: val('weave_type') === 'one_sided' ? getFloat('LCFR') : null,
+                    LCRR: val('weave_type') === 'two_sided' ? getFloat('LCRR') : null,
+                    VFF: getFloat('VFF'), VFR: getFloat('VFR'), VRF: getFloat('VRF'), VRR: getFloat('VRR'),
+                    PHF: getFloat('PHF'), 
+                    percent_sut_ff: getFloat('percent_sut_ff'), percent_tt_ff: getFloat('percent_tt_ff'),
+                    percent_sut_fr: getFloat('percent_sut_fr'), percent_tt_fr: getFloat('percent_tt_fr'),
+                    percent_sut_rf: getFloat('percent_sut_rf'), percent_tt_rf: getFloat('percent_tt_rf'),
+                    percent_sut_rr: getFloat('percent_sut_rr'), percent_tt_rr: getFloat('percent_tt_rr'),
+                    CAF: getFloat('CAF'), SAF: getFloat('SAF'),
+                    hv_analysis_mode: val('hv_analysis_mode'),
+                    terrain_type: val('terrain_type'),
+                    grade_percent: getFloat('grade_percent'),
+                    grade_length_km: getFloat('grade_length_km')
+                };
+
+                try {
+                    const result = compute(inputsSI);
+                    lastResult = result;
+                    displayResults(result);
+                } catch (error) {
+                    console.error("Calculation Error:", error);
+                }
+            });
+            
+             function displayResults(result) {
+                const detailedStepsContainer = document.getElementById('detailed-steps');
+                const alertMessageContainer = document.getElementById('alert-message');
+                placeholderContainer.classList.add('hidden');
+                outputContainer.classList.remove('hidden');
+                document.querySelector('details').open = false;
+
+                if (result.flags && (result.flags.LS_ge_LMAX || result.flags.oversaturated)) {
+                    document.getElementById('summary-content').classList.remove('hidden');
+                    document.getElementById('summary-reason').classList.remove('hidden');
+                    document.querySelector('details').classList.add('hidden');
+
+                    alertMessageContainer.classList.remove('hidden');
+                    alertMessageContainer.className = 'p-4 rounded-lg text-yellow-800 bg-yellow-100';
+                    alertMessageContainer.innerHTML = `<h3 class="font-bold">Analysis Terminated</h3><p>${result.summary.governing_reason}</p>`;
+                    
+                    document.getElementById('los-badge-container').innerHTML = `<div class="los-badge bg-gray-400"><span>${result.summary.LOS || 'N/A'}</span></div>`
+                    document.getElementById('summary-density').textContent = 'N/A';
+                    document.getElementById('summary-speed').textContent = 'N/A';
+                    document.getElementById('summary-vc').textContent = 'N/A';
+                    document.getElementById('summary-capacity').textContent = 'N/A';
+
+
+                    if(result.flags.oversaturated){
+                        document.getElementById('los-badge-container').innerHTML = `<div class="los-badge bg-red-600"><span>F</span></div>`
+                        document.getElementById('summary-vc').textContent = result.summary.v_by_c.toFixed(2);
+                        document.getElementById('summary-capacity').textContent = `${Math.round(result.capacity.capacity_vehph).toLocaleString()} veh/h`;
+                    }
+
+                } else {
+                    document.getElementById('summary-content').classList.remove('hidden');
+                    document.getElementById('summary-reason').classList.remove('hidden');
+                    document.querySelector('details').classList.remove('hidden');
+                    alertMessageContainer.classList.add('hidden');
+                    
+                    updateLOSBadge(result.summary.LOS);
+                    document.getElementById('summary-density').textContent = `${result.summary.density_pc_per_km_per_ln.toFixed(1)} pc/km/ln`;
+                    document.getElementById('summary-speed').textContent = `${result.summary.avg_speed_kmh.toFixed(1)} km/h`;
+                    document.getElementById('summary-vc').textContent = result.summary.v_by_c.toFixed(2);
+                    document.getElementById('summary-capacity').textContent = `${Math.round(result.capacity.capacity_vehph).toLocaleString()} veh/h`;
+                    document.getElementById('summary-reason').textContent = result.summary.governing_reason;
+                }
+
+                detailedStepsContainer.innerHTML = result.trace.map(step => {
+                    return `
+                        <div class="border-b pb-2 mb-2">
+                            <p class="font-bold text-indigo-600">${step.step}: <span class="font-normal text-gray-700">${step.equation}</span></p>
+                            <div class="text-xs break-all">
+                                <p><span class="font-medium">Vars (US):</span> ${JSON.stringify(step.variables_US, (k, v) => typeof v === 'number' ? parseFloat(v.toFixed(3)) : v, 2)}</p>
+                                <p><span class="font-medium">Result:</span> ${JSON.stringify(step.result, (k, v) => typeof v === 'number' ? parseFloat(v.toFixed(3)) : v, 2)}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                 updatePrintableReport(result);
+            }
+             function updateLOSBadge(los) {
+                const colors = { A: 'bg-green-500', B: 'bg-lime-500', C: 'bg-yellow-500', D: 'bg-amber-500', E: 'bg-orange-500', F: 'bg-red-600', 'N/A': 'bg-gray-400' };
+                const badge = `<div class="los-badge ${colors[los] || 'bg-gray-400'}"><span>${los}</span></div>`;
+                document.getElementById('los-badge-container').innerHTML = badge;
+            }
+
+            function updatePrintableReport(result) {
+                const printableContainer = document.getElementById('printable-report');
+                const si = result.full_input_si;
+                if (!si) return;
+                
+                let hvDetails = `Overall Mix: ${(si.percent_sut_ff + si.percent_sut_fr + si.percent_sut_rf + si.percent_sut_rr).toFixed(1)}% SUT / ${(si.percent_tt_ff + si.percent_tt_fr + si.percent_tt_rf + si.percent_tt_rr).toFixed(1)}% TT`;
+                if (si.hv_analysis_mode === 'specific_grade') {
+                    hvDetails += ` | Grade=${si.grade_percent}%, Length=${si.grade_length_km}km`;
+                }
+                
+                let ffsDetails = `Manual Input: ${si.FFS_kmh} km/h`;
+                if(si.ffs_mode === 'estimate'){
+                    const estimatedFFS_kmh = (result.trace.find(s => s.step.includes('Estimate FFS'))?.result.FFS_mph || 0) / MI_PER_KM;
+                    ffsDetails = `Estimated: ${estimatedFFS_kmh.toFixed(1)} km/h (BFFS=${si.BFFS_kmh} km/h, ...)`
+                }
+
+
+                const summaryHtml = result.summary.density_pc_per_km_per_ln !== undefined ? `
+                    <p class="text-xl"><strong>Level of Service (LOS): ${result.summary.LOS}</strong></p>
+                    <p><strong>Reason:</strong> ${result.summary.governing_reason}</p>
+                    <p><strong>Density:</strong> ${result.summary.density_pc_per_km_per_ln.toFixed(2)} pc/km/ln</p>
+                    <p><strong>Average Speed:</strong> ${result.summary.avg_speed_kmh.toFixed(2)} km/h</p>
+                    <p><strong>v/c Ratio:</strong> ${result.summary.v_by_c.toFixed(3)}</p>
+                    <p><strong>Capacity:</strong> ${Math.round(result.capacity.capacity_vehph).toLocaleString()} veh/h</p>
+                ` : `<p class="text-xl"><strong>Analysis Terminated:</strong> ${result.summary.governing_reason}</p>`;
+
+                let html = `
+                    <div style="font-family: Sarabun, sans-serif;">
+                        <h1 class="text-2xl font-bold mb-4">HCM7 Weaving Segment Analysis Report</h1>
+                        <div class="space-y-4 text-sm">
+                            <div class="p-4 border rounded">
+                                <h2 class="text-lg font-bold mb-2">1. Project & Input Data (SI)</h2>
+                                <p><strong>Facility Type:</strong> ${si.facility_type}</p>
+                                <p><strong>Analysis Period:</strong> ${si.period_type} ${si.period_type === 'hourly' ? `(PHF=${si.PHF})` : ''}</p>
+                                <p><strong>Geometry:</strong> LS=${si.LS_m}m, N=${si.N}, ID=${si.ID_per_km}/km</p>
+                                <p><strong>FFS Determination:</strong> ${ffsDetails}</p>
+                                <p><strong>Configuration:</strong> Type=${si.weave_type}, NWL=${si.NWL}, LCRF=${si.LCRF||'-'}, LCFR=${si.LCFR||'-'}, LCRR=${si.LCRR||'-'}</p>
+                                <p><strong>Traffic (veh/h & %HV):</strong> 
+                                    VFF=${si.VFF} (${si.percent_sut_ff}% SUT, ${si.percent_tt_ff}% TT) | 
+                                    VFR=${si.VFR} (${si.percent_sut_fr}% SUT, ${si.percent_tt_fr}% TT) | 
+                                    VRF=${si.VRF} (${si.percent_sut_rf}% SUT, ${si.percent_tt_rf}% TT) | 
+                                    VRR=${si.VRR} (${si.percent_sut_rr}% SUT, ${si.percent_tt_rr}% TT)
+                                </p>
+                                <p><strong>Heavy Vehicle Analysis:</strong> ${si.hv_analysis_mode}. ${hvDetails}</p>
+                                <p><strong>Adjustments:</strong> CAF=${si.CAF}, SAF=${si.SAF}</p>
+                            </div>
+                            <div class="p-4 border rounded">
+                                <h2 class="text-lg font-bold mb-2">2. Summary Results (SI)</h2>
+                                ${summaryHtml}
+                            </div>
+                            <div class="p-4 border rounded">
+                                <h2 class="text-lg font-bold mb-2">3. Detailed Calculation Steps</h2>
+                                ${result.trace.map(step => `
+                                    <div class="mb-2 pb-2 border-b">
+                                        <p><strong>${step.step} (${step.equation})</strong></p>
+                                        <p class="text-xs"><strong>Vars (US):</strong> ${JSON.stringify(step.variables_US, (k,v) => typeof v === 'number' ? +v.toFixed(3) : v, 2)}</p>
+                                        <p class="text-xs"><strong>Result:</strong> ${JSON.stringify(step.result, (k,v) => typeof v === 'number' ? +v.toFixed(3) : v, 2)}</p>
+                                    </div>`).join('')}
+                            </div>
+                        </div>
+                    </div>`;
+                printableContainer.innerHTML = html;
+            }
+
+            document.getElementById('load-demo-btn').addEventListener('click', () => {
+                form.reset();
+                const demoData = {
+                    "facility_type": "freeway", "analysis_period": "hourly", "PHF": 0.92,
+                    "LS_m": 350, "N": 4, "ffs_mode": "manual", "FFS_kmh": 105, "ID_per_km": 0.6,
+                    "weave_type": "one_sided", "NWL": 3, "LCRF": 1, "LCFR": 1,
+                    "VFF": 1200, "VFR": 1600, "VRF": 1700, "VRR": 600, 
+                    "percent_sut_ff": 2.0, "percent_tt_ff": 5.0,
+                    "percent_sut_fr": 8.0, "percent_tt_fr": 12.0,
+                    "percent_sut_rf": 1.0, "percent_tt_rf": 1.0,
+                    "percent_sut_rr": 0.0, "percent_tt_rr": 0.0,
+                    "hv_analysis_mode": "specific_grade", "grade_percent": 4, "grade_length_km": 1.2,
+                    "CAF": 1.0, "SAF": 1.0
+                };
+                
+                for (const key in demoData) {
+                    const el = document.getElementById(key);
+                    if (el) el.value = demoData[key];
+                }
+
+                weaveTypeSelect.dispatchEvent(new Event('change'));
+                analysisPeriodSelect.dispatchEvent(new Event('change'));
+                hvModeSelect.dispatchEvent(new Event('change'));
+                ffsModeSelect.dispatchEvent(new Event('change'));
+                form.dispatchEvent(new Event('submit', { cancelable: true }));
+            });
+
+            document.getElementById('reset-btn').addEventListener('click', () => {
+                const outputContainer = document.getElementById('output-container');
+                const placeholderContainer = document.getElementById('placeholder-container');
+                outputContainer.classList.add('hidden');
+                placeholderContainer.classList.remove('hidden');
+                lastResult = null;
+            });
+
+            document.getElementById('export-json-btn').addEventListener('click', () => {
+                if (!lastResult) { alert('Please run an analysis first.'); return; }
+                const dataStr = JSON.stringify({input: lastResult.full_input_si, output: lastResult}, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                const exportFileDefaultName = 'hcm7_weave_analysis.json';
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+            });
+
+            document.getElementById('print-report-btn').addEventListener('click', () => {
+                 if (!lastResult) { alert('Please run an analysis first.'); return; }
+                 window.print();
+            });
+            
+            handleFfsModeChange();
+            hvModeSelect.dispatchEvent(new Event('change'));
+            analysisPeriodSelect.dispatchEvent(new Event('change'));
+            document.getElementById('load-demo-btn').click();
+        });
+    </script>
+</body>
+</html>
+
