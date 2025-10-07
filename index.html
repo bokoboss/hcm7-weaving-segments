@@ -69,6 +69,14 @@
             cursor: not-allowed;
             color: #64748b; /* slate-500 */
         }
+        .form-input.is-invalid, .form-select.is-invalid {
+            border-color: #ef4444; /* red-500 */
+            background-color: #fef2f2; /* red-100 */
+        }
+        .form-input.is-invalid:focus, .form-select.is-invalid:focus {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.3);
+        }
         /* Style for placeholders */
         .form-input::placeholder {
             color: #94a3b8; /* slate-400 */
@@ -1112,6 +1120,50 @@
             const sensitivityVarSelect = document.getElementById('sensitivity_variable');
             let lastResult = null;
 
+            const getLabelText = (id) => {
+                const label = document.querySelector(`label[for="${id}"]`);
+                if (label) {
+                    return label.textContent.trim();
+                }
+                const element = document.getElementById(id);
+                if (element && element.dataset && element.dataset.label) {
+                    return element.dataset.label;
+                }
+                return id;
+            };
+
+            function clearValidationStates() {
+                document.querySelectorAll('.form-input.is-invalid, .form-select.is-invalid').forEach(el => {
+                    el.classList.remove('is-invalid');
+                    el.removeAttribute('aria-invalid');
+                });
+            }
+
+            const clearFieldValidation = (id) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.classList.remove('is-invalid');
+                    element.removeAttribute('aria-invalid');
+                }
+            };
+
+            function showAlertMessage(type, heading, details) {
+                if (!alertMessageContainer) return;
+                const palette = {
+                    error: 'bg-red-100 text-red-800',
+                    warning: 'bg-amber-100 text-amber-800',
+                    info: 'bg-sky-100 text-sky-800',
+                    success: 'bg-emerald-100 text-emerald-800'
+                };
+                const classes = palette[type] || palette.info;
+                alertMessageContainer.className = `p-4 rounded-lg ${classes}`;
+                const body = Array.isArray(details)
+                    ? `<ul class="list-disc list-inside mt-2 space-y-1 text-sm">${details.map(item => `<li>${item}</li>`).join('')}</ul>`
+                    : `<p class="mt-1 text-sm">${details}</p>`;
+                alertMessageContainer.innerHTML = `<h3 class="font-bold">${heading}</h3>${body}`;
+                alertMessageContainer.classList.remove('hidden');
+            }
+
             function updateFormState() {
                 const mode = document.querySelector('input[name="analysis_mode"]:checked').value;
                 const lsInput = document.getElementById('LS_m');
@@ -1158,67 +1210,148 @@
 
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                outputContainer.classList.remove('hidden');
-                placeholderContainer.classList.add('hidden');
+
                 operationalResultCards.classList.add('hidden');
                 designResultCard.classList.add('hidden');
                 sensitivityChartCard.classList.add('hidden');
                 validationContainer.classList.add('hidden');
-                alertMessageContainer.classList.add('hidden');
+                summaryContent.classList.add('hidden');
+                if (alertMessageContainer) {
+                    alertMessageContainer.classList.add('hidden');
+                    alertMessageContainer.innerHTML = '';
+                }
 
-                const getFloat = id => {
-                    const el = document.getElementById(id);
-                    // Use placeholder if value is empty, otherwise parse the value
-                    const value = el.value.trim() === '' ? (el.placeholder || '0') : el.value;
-                    return parseFloat(value) || 0;
-                }
-                const getInt = id => {
-                     const el = document.getElementById(id);
-                    const value = el.value.trim() === '' ? (el.placeholder || '0') : el.value;
-                    return parseInt(value) || 0;
-                }
-                const val = id => document.getElementById(id).value;
-                const baseInputs = {
-                    facility_type: val('facility_type'), period_type: val('analysis_period'),
-                    LS_m: getFloat('LS_m'), N: getInt('N'), ID_per_km: getFloat('ID_per_km'),
-                    ffs_mode: val('ffs_mode'), FFS_kmh: getFloat('FFS_kmh'), BFFS_kmh: getFloat('BFFS_kmh'),
-                    lane_width_m: getFloat('lane_width_m'), rlc_m: getFloat('rlc_m'), trd_per_km: getFloat('trd_per_km'),
-                    tlc_m: getFloat('tlc_m'), median_type: val('median_type'), access_points_per_km: getFloat('access_points_per_km'),
-                    weave_type: val('weave_type'), NWL: val('weave_type') === 'two_sided' ? 0 : getInt('NWL'),
-                    LCRF: val('weave_type') === 'one_sided' ? getFloat('LCRF') : null, LCFR: val('weave_type') === 'one_sided' ? getFloat('LCFR') : null,
-                    LCRR: val('weave_type') === 'two_sided' ? getFloat('LCRR') : null,
-                    VFF: getFloat('VFF'), VFR: getFloat('VFR'), VRF: getFloat('VRF'), VRR: getFloat('VRR'),
-                    PHF: val('analysis_period') === 'hourly' ? getFloat('PHF') : 1.0, 
-                    percent_sut_ff: getFloat('percent_sut_ff'), percent_tt_ff: getFloat('percent_tt_ff'),
-                    percent_sut_fr: getFloat('percent_sut_fr'), percent_tt_fr: getFloat('percent_tt_fr'),
-                    percent_sut_rf: getFloat('percent_sut_rf'), percent_tt_rf: getFloat('percent_tt_rf'),
-                    percent_sut_rr: getFloat('percent_sut_rr'), percent_tt_rr: getFloat('percent_tt_rr'),
-                    CAF: getFloat('CAF'), SAF: getFloat('SAF'),
-                    hv_analysis_mode: val('hv_analysis_mode'), terrain_type: val('terrain_type'),
-                    truck_mix_option: val('truck_mix_option'), grade_percent: getFloat('grade_percent'), grade_length_km: getFloat('grade_length_km')
+                const inputIssues = [];
+
+                const parseNumericValue = (id, { fallback = 0, required = false, min = null, max = null, usePlaceholder = true, parser, integer = false } = {}) => {
+                    const element = document.getElementById(id);
+                    if (!element) return fallback;
+                    const label = getLabelText(id);
+                    const placeholder = element.getAttribute('placeholder');
+                    let resolvedFallback = fallback;
+                    if (usePlaceholder && placeholder !== null && placeholder.trim() !== '') {
+                        const placeholderValue = parser(placeholder);
+                        if (Number.isFinite(placeholderValue) && (!integer || Number.isInteger(placeholderValue))) {
+                            resolvedFallback = placeholderValue;
+                        }
+                    }
+
+                    const rawValue = element.value.trim();
+                    let parsedValue = resolvedFallback;
+                    const messages = [];
+
+                    if (rawValue === '') {
+                        if (required) {
+                            messages.push(`จำเป็นต้องกรอก ${label}.`);
+                        }
+                    } else {
+                        const parsed = parser(rawValue);
+                        if (!Number.isFinite(parsed) || (integer && !Number.isInteger(parsed))) {
+                            messages.push(`${label} ต้องเป็น${integer ? 'จำนวนเต็ม' : 'ตัวเลข'}ที่ถูกต้อง.`);
+                        } else {
+                            parsedValue = parsed;
+                            if (min !== null && parsed < min) {
+                                messages.push(`${label} ต้องมีค่ามากกว่าหรือเท่ากับ ${min}.`);
+                            }
+                            if (max !== null && parsed > max) {
+                                messages.push(`${label} ต้องมีค่าน้อยกว่าหรือเท่ากับ ${max}.`);
+                            }
+                        }
+                    }
+
+                    if (messages.length > 0) {
+                        element.classList.add('is-invalid');
+                        element.setAttribute('aria-invalid', 'true');
+                        inputIssues.push(...messages);
+                    } else {
+                        element.classList.remove('is-invalid');
+                        element.removeAttribute('aria-invalid');
+                    }
+
+                    return parsedValue;
                 };
+
+                const getFloat = (id, options = {}) => parseNumericValue(id, { parser: Number.parseFloat, integer: false, ...options });
+                const getInt = (id, options = {}) => parseNumericValue(id, { parser: value => Number.parseInt(value, 10), integer: true, ...options });
+                const val = id => document.getElementById(id).value;
+
+                const facilityTypeValue = val('facility_type');
+                const analysisPeriodValue = val('analysis_period');
+                const ffsModeValue = val('ffs_mode');
+                const weaveTypeValue = val('weave_type');
+
+                const baseInputs = {
+                    facility_type: facilityTypeValue,
+                    period_type: analysisPeriodValue,
+                    LS_m: getFloat('LS_m', { required: true, min: 1 }),
+                    N: getInt('N', { required: true, min: 2 }),
+                    ID_per_km: getFloat('ID_per_km', { min: 0 }),
+                    ffs_mode: ffsModeValue,
+                    FFS_kmh: getFloat('FFS_kmh', { min: 0, usePlaceholder: false, required: ffsModeValue === 'manual' }),
+                    BFFS_kmh: getFloat('BFFS_kmh', { min: 0, required: ffsModeValue === 'estimate' }),
+                    lane_width_m: getFloat('lane_width_m', { min: 0, required: ffsModeValue === 'estimate' }),
+                    rlc_m: getFloat('rlc_m', { min: 0, required: ffsModeValue === 'estimate' && facilityTypeValue === 'freeway' }),
+                    trd_per_km: getFloat('trd_per_km', { min: 0, required: ffsModeValue === 'estimate' && facilityTypeValue === 'freeway' }),
+                    tlc_m: getFloat('tlc_m', { min: 0, required: ffsModeValue === 'estimate' && facilityTypeValue !== 'freeway' }),
+                    median_type: val('median_type'),
+                    access_points_per_km: getFloat('access_points_per_km', { min: 0, required: ffsModeValue === 'estimate' && facilityTypeValue !== 'freeway' }),
+                    weave_type: weaveTypeValue,
+                    NWL: weaveTypeValue === 'two_sided' ? 0 : getInt('NWL', { required: true, min: 1 }),
+                    LCRF: weaveTypeValue === 'one_sided' ? getFloat('LCRF', { min: 0 }) : null,
+                    LCFR: weaveTypeValue === 'one_sided' ? getFloat('LCFR', { min: 0 }) : null,
+                    LCRR: weaveTypeValue === 'two_sided' ? getFloat('LCRR', { min: 0 }) : null,
+                    VFF: getFloat('VFF', { min: 0 }),
+                    VFR: getFloat('VFR', { min: 0 }),
+                    VRF: getFloat('VRF', { min: 0 }),
+                    VRR: getFloat('VRR', { min: 0 }),
+                    PHF: analysisPeriodValue === 'hourly' ? getFloat('PHF', { required: true, min: 0.25, max: 1.0, fallback: 1.0, usePlaceholder: false }) : 1.0,
+                    percent_sut_ff: getFloat('percent_sut_ff', { min: 0 }),
+                    percent_tt_ff: getFloat('percent_tt_ff', { min: 0 }),
+                    percent_sut_fr: getFloat('percent_sut_fr', { min: 0 }),
+                    percent_tt_fr: getFloat('percent_tt_fr', { min: 0 }),
+                    percent_sut_rf: getFloat('percent_sut_rf', { min: 0 }),
+                    percent_tt_rf: getFloat('percent_tt_rf', { min: 0 }),
+                    percent_sut_rr: getFloat('percent_sut_rr', { min: 0 }),
+                    percent_tt_rr: getFloat('percent_tt_rr', { min: 0 }),
+                    CAF: getFloat('CAF', { min: 0, usePlaceholder: false }),
+                    SAF: getFloat('SAF', { min: 0, usePlaceholder: false }),
+                    hv_analysis_mode: val('hv_analysis_mode'),
+                    terrain_type: val('terrain_type'),
+                    truck_mix_option: val('truck_mix_option'),
+                    grade_percent: getFloat('grade_percent'),
+                    grade_length_km: getFloat('grade_length_km', { min: 0 })
+                };
+
+                if (inputIssues.length > 0) {
+                    placeholderContainer.classList.remove('hidden');
+                    outputContainer.classList.add('hidden');
+                    showAlertMessage('error', 'กรุณาตรวจสอบข้อมูลที่ป้อน', inputIssues);
+                    return;
+                }
+
+                placeholderContainer.classList.add('hidden');
+                outputContainer.classList.remove('hidden');
+
                 const currentMode = document.querySelector('input[name="analysis_mode"]:checked').value;
                 try {
-                     if(currentMode === 'operational') {
+                    if (currentMode === 'operational') {
                         const result = compute(baseInputs);
                         lastResult = result;
                         operationalResultCards.classList.remove('hidden');
                         displayOperationalResults(result);
                     } else if (currentMode === 'design') {
+                        lastResult = null;
                         const designResult = calculateDesign(baseInputs);
                         designResultCard.classList.remove('hidden');
                         designResultText.innerHTML = designResult.resultText;
                     } else if (currentMode === 'sensitivity') {
+                        lastResult = null;
                         sensitivityChartCard.classList.remove('hidden');
                         runSensitivityAnalysis(baseInputs);
                     }
                 } catch (error) {
-                    console.error("Calculation Error:", error);
-                     if (alertMessageContainer) {
-                        alertMessageContainer.classList.remove('hidden');
-                        alertMessageContainer.className = 'p-4 rounded-lg text-red-800 bg-red-100';
-                        alertMessageContainer.innerHTML = `<h3 class="font-bold">An unexpected error occurred.</h3><p>${error.message}. Please check the console for details.</p>`;
-                    }
+                    console.error('Calculation Error:', error);
+                    showAlertMessage('error', 'เกิดข้อผิดพลาดที่ไม่คาดคิด', `${error.message}. Please check the console for details.`);
                 }
             });
             
@@ -1293,7 +1426,11 @@
             });
             analysisPeriodSelect.addEventListener('change', (e) => {
                 phfInputContainer.classList.toggle('hidden', e.target.value !== 'hourly');
-                 if (e.target.value !== 'hourly') { document.getElementById('PHF').value = 1.0; }
+                if (e.target.value !== 'hourly') {
+                    const phfInput = document.getElementById('PHF');
+                    phfInput.value = 1.0;
+                    clearFieldValidation('PHF');
+                }
             });
             hvModeSelect.addEventListener('change', (e) => {
                 generalTerrainOptions.classList.toggle('hidden', e.target.value !== 'general_terrain');
@@ -1303,12 +1440,22 @@
                 const isManual = ffsModeSelect.value === 'manual';
                 ffsManualInput.classList.toggle('hidden', !isManual);
                 ffsEstimateInputs.classList.toggle('hidden', isManual);
+                if (isManual) {
+                    ['BFFS_kmh', 'lane_width_m', 'rlc_m', 'trd_per_km', 'tlc_m', 'access_points_per_km'].forEach(clearFieldValidation);
+                } else {
+                    clearFieldValidation('FFS_kmh');
+                }
                 handleFacilityTypeChange();
             }
             const handleFacilityTypeChange = () => {
                 const isFreeway = facilityTypeSelect.value === 'freeway';
                 ffsFreewayOptions.classList.toggle('hidden', !isFreeway);
                 ffsMultilaneOptions.classList.toggle('hidden', isFreeway);
+                if (isFreeway) {
+                    ['tlc_m', 'access_points_per_km'].forEach(clearFieldValidation);
+                } else {
+                    ['rlc_m', 'trd_per_km'].forEach(clearFieldValidation);
+                }
             };
             ffsModeSelect.addEventListener('change', handleFfsModeChange);
             facilityTypeSelect.addEventListener('change', handleFacilityTypeChange);
@@ -1317,9 +1464,32 @@
                 form.reset();
                 document.getElementById('CAF').value = 1.0;
                 document.getElementById('SAF').value = 1.0;
+                clearValidationStates();
+                validationContainer.classList.add('hidden');
+                summaryContent.classList.add('hidden');
+                detailedStepsContainer.innerHTML = '';
+                operationalResultCards.classList.add('hidden');
+                designResultCard.classList.add('hidden');
+                sensitivityChartCard.classList.add('hidden');
+                if (sensitivityChartInstance) {
+                    sensitivityChartInstance.destroy();
+                    sensitivityChartInstance = null;
+                }
                 outputContainer.classList.add('hidden');
                 placeholderContainer.classList.remove('hidden');
+                if (alertMessageContainer) {
+                    alertMessageContainer.classList.add('hidden');
+                    alertMessageContainer.innerHTML = '';
+                }
                 lastResult = null;
+                weaveTypeSelect.dispatchEvent(new Event('change'));
+                analysisPeriodSelect.dispatchEvent(new Event('change'));
+                hvModeSelect.dispatchEvent(new Event('change'));
+                handleFfsModeChange();
+                const checkedModeRadio = document.querySelector('input[name="analysis_mode"]:checked');
+                if (checkedModeRadio) {
+                    checkedModeRadio.dispatchEvent(new Event('change'));
+                }
                 updateFormState();
             }
             document.getElementById('reset-btn').addEventListener('click', resetFormToDefaults);
@@ -1340,17 +1510,21 @@
             
             function loadDataAndRefreshUI(demoData) {
                 resetFormToDefaults();
-                 for (const key in demoData) { 
-                    const el = document.getElementById(key); 
+                 for (const key in demoData) {
+                    const el = document.getElementById(key);
                     if (el) {
                        if (el.type === 'radio' || el.type === 'checkbox') {
                            el.checked = el.value === demoData[key];
                        } else {
                            el.value = demoData[key];
                        }
-                    } 
+                    }
                 }
-                document.querySelector('input[name="analysis_mode"]').dispatchEvent(new Event('change'));
+                clearValidationStates();
+                const checkedModeRadio = document.querySelector('input[name="analysis_mode"]:checked');
+                if (checkedModeRadio) {
+                    checkedModeRadio.dispatchEvent(new Event('change'));
+                }
                 weaveTypeSelect.dispatchEvent(new Event('change'));
                 analysisPeriodSelect.dispatchEvent(new Event('change'));
                 hvModeSelect.dispatchEvent(new Event('change'));
